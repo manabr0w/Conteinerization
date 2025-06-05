@@ -26,3 +26,5 @@ def make_app(settings: Settings) -> FastAPI:
         return 'build/index.html'
 
     return app
+
+###useless comment for check behavior
