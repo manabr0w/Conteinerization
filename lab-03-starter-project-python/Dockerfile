@@ -1,15 +1,10 @@
-FROM debian
-
-RUN apt -y update && apt -y upgrade && apt install -y python3 python3-pip python3-venv
+FROM python:3.10-alpine
 
 WORKDIR /app
 
 COPY requirements.txt .
 
-RUN python3 -m venv .venv
-
-RUN . .venv/bin/activate && .venv/bin/pip install --upgrade pip \
-&& .venv/bin/pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY . .
 
