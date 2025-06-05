@@ -16,6 +16,8 @@ WORKDIR /app
 
 COPY --from=build /app/fizzbuzz .
 
+COPY --from=build /app/templates ./templates
+
 EXPOSE 8080
 
 CMD [ "./fizzbuzz", "serve" ]
