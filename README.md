@@ -167,4 +167,56 @@ CMD [ "./fizzbuzz", "serve" ]
 ### Розмір образу:
 ```golang_app/first              latest    52967de0288c   2 minutes ago       965MB```
 
-### Аналізуючи вміст контейнеру і враховуючи специфіку мови Go, як компільованої мови програмування, я зрозумів, що не всі файли, які знаходяться в контейнері потрібні для його роботи, вистачить лише артефакту (двійкового файлу).
+### Аналізуючи вміст контейнеру і враховуючи специфіку мови Go, як компільованої мови програмування, я зрозумів, що не всі файли, які знаходяться в контейнері потрібні для його роботи, вистачить лише артефакту (двійкового файлу). Тому тепер я створив багатоетапний Dockerfile, ось його вміст:
+
+```docker
+FROM golang:1.24 AS build
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o fizzbuzz
+
+FROM scratch
+
+WORKDIR /app
+
+COPY --from=build /app/fizzbuzz .
+
+EXPOSE 8080
+
+CMD [ "./fizzbuzz", "serve" ]
+```
+
+### Час збірки:
+```Building 6.4s (13/13) FINISHED```
+
+### Розмір образу:
+```golang_app/multistage         latest    ae94f03cdb6c   34 seconds ago      12.5MB```
+
+### Після спроби запуску контейнера він одразу закінчив своє існування - тому я вирішив його протраблшутити за допомогою команди ```docker logs```, ось який вивід я отримав: 
+```:~$ docker logs e0c61a328d049022ef35c8595a2d76c6cf4225daf5d16b0bb773e113a6177108
+panic: open templates/index.html: no such file or directory
+
+goroutine 1 [running]:
+html/template.Must(...)
+	/usr/local/go/src/html/template/template.go:368
+fizzbuzz/cmd.init.func2(0xc22da0, {0x887221?, 0x4?, 0x887225?})
+	/app/cmd/serve.go:21 +0x1ba
+github.com/spf13/cobra.(*Command).execute(0xc22da0, {0xc4d4e0, 0x0, 0x0})
+	/go/pkg/mod/github.com/spf13/cobra@v1.3.0/command.go:860 +0x691
+github.com/spf13/cobra.(*Command).ExecuteC(0xc22b20)
+	/go/pkg/mod/github.com/spf13/cobra@v1.3.0/command.go:974 +0x38d
+github.com/spf13/cobra.(*Command).Execute(...)
+	/go/pkg/mod/github.com/spf13/cobra@v1.3.0/command.go:902
+fizzbuzz/cmd.Execute()
+	/app/cmd/root.go:21 +0x1a
+main.main()
+	/app/main.go:10 +0xf
+```
+### З цього виводу я зробив висновок, що для роботи застосунку лише "бінарника" не вистачить, а ще й треба html файл з шаблонів, тому я переписав докерфайл: 
