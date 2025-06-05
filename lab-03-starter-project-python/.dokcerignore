@@ -1,0 +1,5 @@
+.venv/
+.idea/
+.trunk/
+.gitignore
+README.rst
